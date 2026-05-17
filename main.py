@@ -1,4 +1,4 @@
-from usuario import *
+from src.usuario import *
 
 def entrar_usuario():
 

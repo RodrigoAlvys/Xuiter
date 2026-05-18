@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from typing import cast
+import pickle
 
 class Usuario:
     def __init__(self, nome:str, display:str, email:str, id:int):
@@ -70,7 +71,7 @@ class Rede_Social:
     def __init__(self):
         self.graph: nx.Graph[int] = nx.Graph()
         self.next_id:int = 1
-        self.path_json: str = "cache/save.json"
+        self.path_json: str = "cache/save.pkl"
 
     def buscar_usuario_nome(self, nome: str) -> list[Usuario]|None:
         lista: list[Usuario] = []
@@ -120,6 +121,9 @@ class Rede_Social:
     def desfazer_amizade(self, usuario:Usuario, outro_usuario:Usuario) -> None:
         usuario.remover_amizade(outro_usuario)
         self.graph.remove_edge(usuario.id, outro_usuario.id)
+    def salvar_json(self):
+        with open(self.path_json, "wb") as file:
+            pickle.dump(self, file)
 
 '''
 usuarios: list[Usuario] = []

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import networkx as nx
 import matplotlib.pyplot as plt
 from typing import cast
@@ -37,8 +39,55 @@ class Usuario:
         for amigo in self.lista_amigos:
             print(f"- {amigo.nome} ({amigo.email})")
 
-    def listar_recomendacoes(self) -> None:
-        print("\nplaceholder")
+    def listar_recomendacoes(self, rede_social) -> None:
+        layers = list(
+            nx.bfs_layers(
+                rede_social.graph,
+                [self.id]
+            )
+        )
+        if len(layers) < 3:
+            print("\nNenhuma recomendação encontrada.")
+            return
+        recomendados_ids = layers[2]
+        recomendados: list[Usuario] = []
+        for user_id in recomendados_ids:
+            usuario = rede_social.buscar_usuario_id(user_id)
+            if usuario is None:
+                continue
+            if usuario == self:
+                continue
+            if usuario in self.lista_amigos:
+                continue
+            recomendados.append(usuario)
+        if not recomendados:
+            print("\nNenhuma recomendação encontrada.")
+            return
+        print("\n~~~ RECOMENDAÇÕES ~~~")
+        for i, usuario in enumerate(recomendados):
+            print(
+                f"{i + 1} - "
+                f"{usuario.display_name} "
+                f"({usuario.nome})"
+            )
+        escolha = input(
+            "\nEscolha um usuário "
+            "(ENTER para cancelar): "
+        )
+        if escolha == "":
+            return
+        try:
+            indice = int(escolha) - 1
+            if indice < 0 or indice >= len(recomendados):
+                print("Opção inválida.")
+                return
+            escolhido = recomendados[indice]
+            rede_social.fazer_amizade(
+                self,
+                escolhido
+            )
+        except:
+            print("Entrada inválida.")
 
     def edit_nome(self, nome:str):
         nome = nome.capitalize().strip()

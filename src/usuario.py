@@ -1,5 +1,6 @@
 import networkx as nx
-import matplotlib as plt
+import matplotlib.pyplot as plt
+from typing import cast
 
 class Usuario:
     def __init__(self, nome:str, display:str, email:str, id:int):
@@ -50,17 +51,20 @@ class Usuario:
         display = display.strip()
         if self.display_name.strip():
             self.display_name = display
-    def show_usuario(self):
+    def show_usuario(self) -> None:
         print(f"Apelido: {self.display_name}")
         print(f"Nome Completo: {self.nome}")
         print(f"Email: {self.email}")
         print(f"ID: {self.id}")
         print("Amigos: ", end="")
-        for x in range(len(self.lista_amigos)):
-            if x == len(self.lista_amigos)-1:
-                print(f"{self.lista_amigos[x].display_name}")
-            else:
-                print(f"{self.lista_amigos[x].display_name}, ", end="")
+        if self.lista_amigos:
+            for x in range(len(self.lista_amigos)):
+                if x == len(self.lista_amigos)-1:
+                    print(f"{self.lista_amigos[x].display_name}")
+                else:
+                    print(f"{self.lista_amigos[x].display_name}, ", end="")
+        else:
+            print("n/a")
 
 class Rede_Social:
     def __init__(self):
@@ -68,37 +72,31 @@ class Rede_Social:
         self.next_id:int = 1
         self.path_json: str = "cache/save.json"
 
-    def __usuario_no_node(self, id:int) -> Usuario|None:
-        data = self.graph.nodes[id].get("usuario")
-        if isinstance(data, Usuario):
-            return data
-        return None
-
     def buscar_usuario_nome(self, nome: str) -> list[Usuario]|None:
         lista: list[Usuario] = []
         nome = nome.lower().strip()
         for x in self.graph.nodes(data=True):
-            if nome in x[1]["usuario"].nome: lista.append(x[1]["usuario"])
+            if nome in cast(Usuario, x[1]["usuario"]).nome: lista.append(cast(Usuario, x[1]["usuario"]))
         return lista
 
     def buscar_usuario_email(self, email: str) -> Usuario|None:
         email = email.strip()
         for x in self.graph.nodes(data=True):
-            if email == x[1]["usuario"].email:
-                return x[1]["usuario"]
+            if email == cast(Usuario, x[1]["usuario"]).email:
+                return cast(Usuario, x[1]["usuario"])
         return None
 
     def buscar_usuario_id(self, id: int) -> Usuario|None:
         if self.graph.nodes[id]:
-            return self.graph.nodes[id]['usuario']
+            return self.graph.nodes[id].get('usuario')
         return None
 
     def criar_usuario(self, nome:str, display:str, email:str) -> None:
         for x in self.graph.nodes(data=True):
-            if x[1]["usuario"].display_name == display:
+            if cast(Usuario, x[1]["usuario"]).display_name == display:
                 print("Já existe um usuário com esse nome")
                 return
-            if x[1]["usuario"].email == email:
+            if cast(Usuario, x[1]["usuario"]).email == email:
                 print("Já existe um usuário com esse email")
                 return
         self.graph.add_node(self.next_id, usuario=Usuario(nome, display, email, self.next_id))
@@ -111,11 +109,10 @@ class Rede_Social:
                     x.remover_amizade(usuario)
         self.graph.remove_node(usuario.id)
 
-    def edit_usuario(self, usuario:Usuario):
-        pass
-    def show_usuario(self, usuario:Usuario) -> None:
-        pass
     def show_graph(self):
+        labels = {node: data["usuario"].display_name for node, data in self.graph.nodes(data=True)}
+        nx.draw_circular(self.graph, labels=labels, with_labels=True)
+        plt.show()
         pass
     def fazer_amizade(self, usuario:Usuario, outro_usuario:Usuario) -> None:
         usuario.adicionar_amizade(outro_usuario)

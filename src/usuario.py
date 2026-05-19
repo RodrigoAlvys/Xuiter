@@ -79,6 +79,14 @@ class Rede_Social:
             if nome in cast(Usuario, x[1]["usuario"]).nome: lista.append(cast(Usuario, x[1]["usuario"]))
         return lista
 
+    def buscar_usuario_display(self, nome: str) -> list[Usuario]:
+        lista: list[Usuario] = []
+        nome = nome.lower().strip()
+        for x in self.graph.nodes(data=True):
+            if nome in cast(Usuario, x[1]["usuario"]).display_name:
+                lista.append(cast(Usuario, x[1]["usuario"]))
+        return lista
+
     def buscar_usuario_email(self, email: str) -> Usuario|None:
         email = email.strip()
         for x in self.graph.nodes(data=True):
@@ -109,11 +117,37 @@ class Rede_Social:
                     x.remover_amizade(usuario)
         self.graph.remove_node(usuario.id)
 
+    def Lista_de_recomendados(self, usuario:Usuario) -> list[Usuario]|None:
+        recomendados:list[Usuario] = []
+        camadas = list(nx.bfs_layers(self.graph, usuario.id))
+        if len(camadas) < 3:
+            print("Nenhuma recomenação encontrada.")
+            return recomendados
+        recomendados_ids = camadas[2]
+        for user_id in recomendados_ids:
+            user = self.buscar_usuario_id(user_id)
+            if user is None:
+                continue
+            elif user == usuario:
+                continue
+            elif user in usuario.lista_amigos:
+                continue
+            else:
+                recomendados.append(user)
+        if not recomendados:
+            print("Nenhuma recomendação encontrada.")
+        return recomendados
+
     def show_graph(self):
-        labels = {node: data["usuario"].display_name for node, data in self.graph.nodes(data=True)}
+        labels = {node: cast(Usuario, data["usuario"]).display_name for node, data in self.graph.nodes(data=True)}
         nx.draw_circular(self.graph, labels=labels, with_labels=True)
         plt.show()
-        pass
+
+    def mostrar_todos_usuarios(self) -> None:
+        for x in self.graph.nodes(data=True):
+            print(15*"-x-")
+            cast(Usuario, x[1]["usuario"]).show_usuario()
+
     def fazer_amizade(self, usuario:Usuario, outro_usuario:Usuario) -> None:
         usuario.adicionar_amizade(outro_usuario)
         _= self.graph.add_edge(usuario.id, outro_usuario.id)
@@ -121,46 +155,13 @@ class Rede_Social:
         usuario.remover_amizade(outro_usuario)
         self.graph.remove_edge(usuario.id, outro_usuario.id)
     def salvar_binario(self, save_path:str):
-        with open(save_path, "wb") as file:
-            pickle.dump(self, file)
+        try:
+            with open(save_path, "wb") as file:
+                pickle.dump(self, file)
+        except FileNotFoundError:
+            print(f"Error, não foi encontrado o arquivo no caminho {save_path}")
+        except PermissionError:
+            print(f"Error, o programa não tem permissão para abrir arquivo no caminho {save_path}")
+        except Exception as e:
+            print(f"Error inesperado: {e}")
 
-'''
-usuarios: list[Usuario] = []
-
-def criar_usuario(nome:str, email:str):
-    for usuario in usuarios:
-        if usuario.email == email:
-            print("Já existe um usuário com esse email.")
-            return None
-    novo_usuario = Usuario(nome, email)
-    usuarios.append(novo_usuario)
-    print("Usuário criado com sucesso.")
-    return novo_usuario
-
-def procurar_usuario(email:str):
-    for usuario in usuarios:
-        if usuario.email == email:
-            return usuario
-    return None
-
-def remover_usuario(email:str):
-    usuario = procurar_usuario(email)
-    if usuario is None:
-        print("Usuário não encontrado.")
-        return
-    for amigo in usuario.lista_amigos:
-        amigo.lista_amigos.remove(usuario)
-    usuarios.remove(usuario)
-    print("Usuário removido com sucesso.")
-
-def atualizar_usuario(email:str, novo_nome:str|None = None, novo_email:str|None = None):
-    usuario = procurar_usuario(email)
-    if usuario is None:
-        print("Usuário não encontrado.")
-        return
-    if novo_nome:
-        usuario.nome = novo_nome
-    if novo_email:
-        usuario.email = novo_email
-    print("Usuário atualizado com sucesso.")
-'''
